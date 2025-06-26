@@ -1,7 +1,8 @@
-# Gemini Structured Output
-A robust Python wrapper for the Google Gemini API (google-genai client) that simplifies getting structured JSON output by handling chat history, model parameters, and response parsing
+# Gemini Structured Output Handler
 
-This function is built on the `google-genai` client library and provides a clean, reliable interface to leverage Gemini's native JSON mode. It properly handles system prompts, multi-turn chat history, model selection, and temperature settings, returning a parsed Python dictionary every time.
+A robust and reusable Python wrapper for the Google Gemini API that simplifies getting structured JSON output.
+
+This function is built on the `google-genai` client library and provides a clean, reliable interface to leverage the native JSON mode of models like **Gemini 2.5 Pro** and **Gemini 2.5 Flash**. It properly handles system prompts, multi-turn chat history, model selection, and temperature settings, returning a parsed Python dictionary every time.
 
 Say goodbye to unreliable string parsing and prompt-hacking for JSON output!
 
@@ -10,20 +11,20 @@ Say goodbye to unreliable string parsing and prompt-hacking for JSON output!
 - **Guaranteed JSON Output:** Uses Gemini's native `response_mime_type="application/json"` for reliable, valid JSON.
 - **Structured Schema Definition:** Define your desired output using a simple Python dictionary.
 - **Full Chat History Support:** Natively handles multi-turn conversations for contextual responses.
-- **Configurable:** Easily change the Gemini model (`gemini-2.5-pro`, `gemini-2.5-flash`, etc.) and `temperature`.
+- **Configurable:** Easily change the Gemini model (`gemini-2.5-pro-preview-06-17`, `gemini-2.5-flash-lite-preview-06-17`, etc.) and `temperature`.
 - **Error Handling:** Includes checks for API keys and gracefully handles API exceptions.
 - **Reusable & Clean:** A single, well-documented function to drop into any project.
 
 ## Prerequisites
 
 - Python 3.8+
-- A Google Gemini API Key.
+- A Google Gemini API Key with access to Gemini 2.5 models.
 
 ## Installation
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/deedeeharris/gemini-structured-output.git
+    git clone https://github.com/YOUR_USERNAME/gemini-json-handler.git
     cd gemini-json-handler
     ```
 
@@ -91,7 +92,7 @@ try:
         user_message=new_user_input,
         message_history=my_message_history,
         output_schema=my_output_schema,
-        model_name="gemini-2.5-flash", # Specify any compatible model
+        model_name="gemini-2.5-flash-lite-preview-06-17", # Specify a Gemini 2.5 model
         temperature=0.0
     )
 
@@ -109,3 +110,16 @@ except ValueError as e:
     print(f"\nConfiguration Error: {e}")
 except Exception as e:
     print(f"\nAn unexpected error occurred: {e}")
+
+```
+
+## Function Reference
+
+`call_gemini_api(system_prompt, user_message, message_history=None, output_schema=None, model_name="gemini-2.5-flash-lite-preview-06-17", temperature=0.0)`
+
+-   `system_prompt` (str): The master instruction for the model's behavior.
+-   `user_message` (str): The latest user message to be processed.
+-   `message_history` (list[dict], optional): A list of previous messages for conversational context.
+-   `output_schema` (dict, optional): A dictionary defining the desired JSON output structure.
+-   `model_name` (str, optional): The Gemini model to use (e.g., `gemini-2.5-pro-preview-06-17`).
+-   `temperature` (float, optional): The generation temperature (0.0 for deterministic output).
