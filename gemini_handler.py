@@ -38,6 +38,7 @@ def call_gemini_api(
     output_schema: dict | None = None,
     model_name: str = "gemini-2.5-flash",
     temperature: float = 0.0,
+    api_key: str | None = None,
 ) -> dict:
     """
     Calls the Google Gemini API with structured output support using the genai.Client.
@@ -60,11 +61,14 @@ def call_gemini_api(
             function will request JSON output. If None, a plain text response
             is requested. Defaults to None.
         model_name (str, optional): The specific Gemini model to be used for the
-            API call (e.g., "gemini-2.5-flash").
+            API call (e.g., "gemini-2.5-pro").
             Defaults to "gemini-2.5-flash".
         temperature (float, optional): Controls the randomness of the output.
             A value of 0.0 is deterministic, while higher values (e.g., 0.7)
             produce more creative results. Defaults to 0.0.
+        api_key (str | None, optional): The Google Gemini API key. If provided,
+            it will be used for authentication. If None, the function will
+            look for the 'GEMINI_API_KEY' environment variable. Defaults to None.
 
     Returns:
         dict: A Python dictionary representing the parsed JSON response from the
@@ -72,15 +76,26 @@ def call_gemini_api(
               contain a single key, "text", with the model's plain text response.
 
     Raises:
-        ValueError: If the 'GEMINI_API_KEY' environment variable is not set.
+        ValueError: If the Gemini API key is not provided either as a parameter
+                    or as an environment variable.
         Exception: Propagates any exceptions that occur during the API call,
                    such as authentication or network errors.
     """
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        raise ValueError("GEMINI_API_KEY environment variable not set.")
-    client = genai.Client(api_key=api_key)
+    # 1. Determine the API key to use
+    key_to_use = api_key
+    if key_to_use is None:
+        key_to_use = os.environ.get("GEMINI_API_KEY")
+    
+    if not key_to_use:
+        raise ValueError(
+            "A Gemini API key must be provided either as the 'api_key' parameter "
+            "or as the 'GEMINI_API_KEY' environment variable."
+        )
 
+    # 2. Initialize the Client
+    client = genai.Client(api_key=key_to_use)
+
+    # 3. Construct the message history
     contents = []
     if message_history:
         for msg in message_history:
@@ -93,6 +108,7 @@ def call_gemini_api(
         parts=[types.Part.from_text(text=user_message)]
     ))
 
+    # 4. Build the Generation Configuration
     response_schema = None
     response_mime_type = "text/plain"
     if output_schema:
@@ -106,6 +122,7 @@ def call_gemini_api(
         system_instruction=[types.Part.from_text(text=system_prompt)],
     )
     
+    # 5. Make the API call
     try:
         response = client.models.generate_content(
             model=f"models/{model_name}",
@@ -130,43 +147,41 @@ if __name__ == '__main__':
     
     print("--- Running Gemini API Handler Example ---")
     
-    # 1. Define the system prompt, schema, and inputs
-    my_system_prompt = "You are a travel agent. Extract the user's travel plan into a structured JSON object. Infer the travel method if not specified."
-    new_user_input = "I need to book a trip from Paris to Tokyo for next month, from the 15th to the 22nd. I'll need a hotel."
-    my_output_schema = {
-        "type": "object",
-        "properties": {
-            "departure_city": {"type": "string"},
-            "destination_city": {"type": "string"},
-            "travel_dates": {
-                "type": "object",
-                "properties": {
-                    "start_date": {"type": "string"},
-                    "end_date": {"type": "string"}
-                }
+    # The API key can be passed directly. For security, it's best to load it
+    # from an environment variable or a secure secret manager.
+    my_api_key = os.environ.get("GEMINI_API_KEY")
+    if not my_api_key:
+        print("ERROR: Please set the GEMINI_API_KEY environment variable to run this example.")
+    else:
+        # 1. Define the system prompt, schema, and inputs
+        my_system_prompt = "You are an invoice processor. Extract key details from the user's text into a structured JSON object."
+        new_user_input = "Please process invoice #4815 for ACME Corp, due on 2025-07-31, for the amount of $1,250.50. The item is 'Software License'."
+        my_output_schema = {
+            "type": "object",
+            "properties": {
+                "invoice_id": {"type": "string"},
+                "customer_name": {"type": "string"},
+                "due_date": {"type": "string", "description": "Date in YYYY-MM-DD format"},
+                "total_amount": {"type": "number"},
+                "line_item": {"type": "string"}
             },
-            "needs_hotel": {"type": "boolean"},
-            "inferred_travel_method": {"type": "string"}
-        },
-        "required": ["departure_city", "destination_city", "travel_dates"]
-    }
+            "required": ["invoice_id", "customer_name", "due_date", "total_amount"]
+        }
 
-    try:
-        # 2. Call the function
-        structured_response = call_gemini_api(
-            system_prompt=my_system_prompt,
-            user_message=new_user_input,
-            output_schema=my_output_schema,
-            # The model defaults to a Gemini 2.5 model, but you can override it:
-            # model_name="gemini-2.5-flash", 
-            temperature=0.0
-        )
+        try:
+            # 2. Call the function, passing the API key directly
+            structured_response = call_gemini_api(
+                system_prompt=my_system_prompt,
+                user_message=new_user_input,
+                output_schema=my_output_schema,
+                api_key=my_api_key  # <-- Pass the key here
+            )
 
-        # 3. Print the results
-        print("\n--- Parsed JSON Response ---")
-        print(json.dumps(structured_response, indent=2))
+            # 3. Print the results
+            print("\n--- Parsed JSON Response ---")
+            print(json.dumps(structured_response, indent=2))
 
-    except ValueError as e:
-        print(f"\nConfiguration Error: {e}")
-    except Exception as e:
-        print(f"\nAn unexpected error occurred: {e}")
+        except ValueError as e:
+            print(f"\nConfiguration Error: {e}")
+        except Exception as e:
+            print(f"\nAn unexpected error occurred: {e}")
