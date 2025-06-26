@@ -17,7 +17,7 @@ Say goodbye to unreliable string parsing and prompt-hacking for JSON output!
 
 ## Prerequisites
 
-- Python 3.8+
+- Python 3.9+
 - A Google Gemini API Key with access to Gemini 2.5 models.
 
 ## Installation
