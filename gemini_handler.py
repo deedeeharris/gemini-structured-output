@@ -36,7 +36,7 @@ def call_gemini_api(
     user_message: str,
     message_history: list[dict] | None = None,
     output_schema: dict | None = None,
-    model_name: str = "gemini-2.5-flash-lite-preview-06-17",
+    model_name: str = "gemini-2.5-flash",
     temperature: float = 0.0,
 ) -> dict:
     """
